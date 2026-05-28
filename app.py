@@ -6,7 +6,10 @@ import plotly.graph_objects as go
 from datetime import datetime
 import os
 import sys
+import google.generativeai as genai
 
+genai.configure(api_key="AIzaSyB2pOo5PLOJ7hoQCuRHFotD4qERTG1U2Fk")
+model = genai.GenerativeModel("gemini-2.0-flash")
 # Add project directories to Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'models'))
@@ -25,6 +28,7 @@ except ImportError as e:
     st.error(f"Import error: {e}. Please ensure all modules are properly installed.")
 
 # Page configuration
+genai.configure(api_key="AIzaSyB2pOo5PLOJ7hoQCuRHFotD4qERTG1U2Fk")
 st.set_page_config(
     page_title="AI Resume Screening System",
     page_icon="🚀",
@@ -206,6 +210,28 @@ def process_resumes(uploaded_files):
             candidate_data = parser.parse_file(file)
             st.session_state.candidates.append(candidate_data)
         except Exception as e:
+            ai_analysis = f"""
+## 🤖 AI Hiring Analysis
+
+### ✅ Candidate Strengths
+- Strong technical foundation
+- Relevant project experience
+- Good alignment with job requirements
+- Demonstrates problem-solving capability
+
+### ⚠️ Areas for Improvement
+- Could improve advanced system design knowledge
+- More production-level experience recommended
+- Communication skills can be strengthened
+
+### 📌 Hiring Recommendation
+Candidate shows promising potential and is suitable for technical interview rounds.
+
+### 🎯 Suggested Next Round
+- Technical coding interview
+- Project discussion
+- Behavioral assessment
+"""
             st.error(f"Error processing {file.name}: {str(e)}")
         
         progress_bar.progress((i + 1) / len(uploaded_files))
@@ -356,6 +382,83 @@ def ranking_dashboard_page():
     # ======================================
     # Hiring Recommendation
     # ======================================
+    st.markdown("<br>", unsafe_allow_html=True)
+
+st.markdown("""
+<h2 style='color:white'>
+🧠 AI Hiring Intelligence
+</h2>
+""", unsafe_allow_html=True)
+
+if "rankings" in st.session_state and len(st.session_state.rankings) > 0:
+
+    top_candidate = st.session_state.rankings[0]
+
+    candidate_name = top_candidate["name"]
+    candidate_score = top_candidate["score"]
+
+    if st.button("🚀 Generate AI Hiring Analysis"):
+
+        with st.spinner("Analyzing candidate with Gemini AI..."):
+
+            prompt = f"""
+            You are an expert technical recruiter.
+
+            Analyze this candidate.
+
+            Candidate Name: {candidate_name}
+            Candidate Score: {candidate_score}
+
+            Give:
+            1. Candidate strengths
+            2. Candidate weaknesses
+            3. Hiring recommendation
+            4. Technical interview questions
+            5. Final recruiter verdict
+            """
+            import google.generativeai as genai
+            from google.api_core.exceptions import ResourceExhausted
+
+            try:
+                genai.configure(api_key="AIzaSyDRl5AkhPcnXJ_5FmO9QJcGFD0rpUW6q9g")
+                model = genai.GenerativeModel("gemini-2.0-flash")
+                response = model.generate_content(prompt)
+
+                st.markdown(f"""
+                <div style="
+                    background:#111827;
+                    padding:25px;
+                    border-radius:15px;
+                    border:1px solid #374151;
+                    color:white;
+                    line-height:1.8;
+                    font-size:17px;
+                ">
+                {response.text}
+                </div>
+                """, unsafe_allow_html=True)
+
+                st.download_button(
+                    "📥 Download AI Report",
+                    response.text,
+                    file_name=f"{candidate_name}_AI_Report.txt"
+                )
+
+            except ResourceExhausted:
+                st.error("""
+                ⚠️ **Google Gemini API Quota Exceeded**
+                
+                The free tier quota for the Gemini API has been exceeded. 
+                
+                **Options:**
+                1. Upgrade to a paid plan at https://ai.google.dev/pricing
+                2. Wait for the quota to reset (varies by plan)
+                3. Use a different API key with available quota
+                
+                The AI Hiring Analysis feature will be available once quota is restored.
+                """)
+            except Exception as e:
+                st.error(f"❌ Error analyzing candidate: {str(e)}")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
